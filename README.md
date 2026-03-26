@@ -9,7 +9,7 @@
 
 ```
 ========================================================
-  KVStore FAANG-Level Benchmark
+  KVStore Benchmark
   Methodology: warmup + multiple runs + tail latency
 ========================================================
 
