@@ -159,39 +159,6 @@ make -j$(nproc)
 
 ---
 
-## Design Decisions & Interview Q&A
-
-**Q: WAL vs direct SSTable write — why WAL first?**
-> SSTable write requires sorting + disk flush — slow. If crash mid-write, data
-> is lost. WAL is append-only: O(1) per record. On restart, replay WAL into
-> MemTable. Zero data loss, O(n) recovery time.
-
-**Q: Bloom filter false positive kya hai?**
-> Bloom says "key exists" but it doesn't — wasted disk read.
-> False negative NEVER happens. If bloom says "no", key is guaranteed absent.
-> Tuned to 1.05% FPR: 99% of absent-key lookups skip disk entirely.
-
-**Q: LRU cache implementation?**
-> HashMap (O(1) lookup) + Doubly Linked List (O(1) move-to-front + tail eviction).
-> Same pattern as LeetCode #146. On cache hit: move node to front.
-> On capacity exceeded: evict from tail (least recently used).
-
-**Q: Compaction kyun zaroori hai?**
-> Without compaction: key "x" can exist in 5 SSTables → O(5) disk reads.
-> After full compaction: one file, latest value wins, tombstones dropped.
-> Read amplification O(n) → O(1). Also reclaims disk space from deleted keys.
-
-**Q: Numeric SSTable sort bug — kya tha?**
-> Lexicographic: "sst_10" < "sst_9" (wrong — 10 is newer, should be read first).
-> Fix: parse numeric suffix via stoi(), sort by integer value.
-> Bug caused stale reads — older SSTable read before newer one.
-
-**Q: Concurrent reads?**
-> Currently: `std::mutex` serializes all ops (correct but not optimal).
-> Planned: `std::shared_mutex` — parallel reads, exclusive writes.
-> Production: per-shard locking (RocksDB style).
-
----
 
 ## Bugs Fixed (13 total — documented in kvstore.cpp)
 
@@ -230,24 +197,4 @@ make -j$(nproc)
 
 ---
 
-## Resume Bullets
 
-```
-KVStore — LSM-Tree Key-Value Storage Engine | C++17, CMake, GoogleTest
-Oct 2025 – Present
-
-• Engineered LSM-Tree storage engine (WAL → MemTable → SSTable) with full
-  crash recovery via WAL replay; 35/35 unit + regression tests passing
-
-• Implemented Bloom Filter achieving 9.2M ops/sec with 1.05% false positive
-  rate, eliminating 99% of unnecessary SSTable disk reads
-
-• Built LRU Block Cache (HashMap + Doubly Linked List) delivering 4.2M ops/sec
-  warm-read throughput at 5% memory ratio (p50=0.22µs, p99=0.61µs)
-
-• Designed compaction engine merging 5 SSTables → 1 in ~20ms, reducing
-  read amplification from O(n files) → O(1)
-
-• Identified and fixed 13 production-class bugs including numeric SSTable
-  ordering, tombstone GC, WAL stream recovery, and partial write cleanup
-```
