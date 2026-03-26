@@ -5,7 +5,7 @@
 
 ---
 
-## Benchmark Results (Intel Xeon @ 2.20GHz, 13GB RAM)
+## Benchmark Results (Intel Xeon @ 2.20GHz, 13GB RAM) (Google Colab)
 
 ```
 ========================================================
